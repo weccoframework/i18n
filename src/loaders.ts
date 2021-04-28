@@ -20,11 +20,11 @@ import { MessageLoader } from "./MessageLoader"
 import { Language, Messages } from "./Messages"
 
 /**
- * An implementation of `MessageLoader` that "loads" `Messages` from given objects.
+ * An implementation of `MessageLoader` that "loads" `Messages` from given Javascript objects.
  * This implemenation is especially usefull when loading messages from JSON files that are included
  * during Javascript assembly.
  */
-export class DirectMessageLoader implements MessageLoader {
+export class ObjectMessageLoader implements MessageLoader {
     constructor(private readonly defaultMessages: Messages, private readonly messagesByLanguage: { [key in Language]: Messages }) { }
 
     loadDefaultMessages(): Promise<Messages> {
@@ -48,7 +48,7 @@ export class CascadingMessageLoader implements MessageLoader {
 
     constructor(...loaders: Array<MessageLoader>) {
         if (loaders.length < 2) {
-            throw `Invalid number of loaders to merge: ${loaders.length}`
+            throw new Error(`Invalid number of loaders to merge: ${loaders.length}`)
         }
         this.loaders = loaders
     }

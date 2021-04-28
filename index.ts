@@ -18,5 +18,5 @@
 
 export { Language, Messages } from "./src/Messages"
 export { MessageLoader } from "./src/MessageLoader"
-export { DirectMessageLoader, CascadingMessageLoader } from "./src/loaders"
+export { ObjectMessageLoader, CascadingMessageLoader } from "./src/loaders"
 export { MessageResolver, MessageResolvingError } from "./src/MessageResolver"
