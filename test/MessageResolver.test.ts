@@ -1,11 +1,11 @@
 import { expect } from "iko"
-import { MessageResolver, DirectMessageLoader, MessageResolvingError } from ".."
+import { MessageResolver, ObjectMessageLoader, MessageResolvingError } from ".."
 
 describe("MessageResolver", () => {
     let messageResolver: MessageResolver
 
     before(async () => {
-        messageResolver = await MessageResolver.create(new DirectMessageLoader({
+        messageResolver = await MessageResolver.create(new ObjectMessageLoader({
             "close": "Close",
             "msg": "Welcome, {{0}}",
             "numberOfMails": {

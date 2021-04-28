@@ -1,7 +1,7 @@
 import { expect } from "iko"
-import { DirectMessageLoader, CascadingMessageLoader, Messages } from ".."
+import { ObjectMessageLoader, CascadingMessageLoader, Messages } from ".."
 
-describe("DirectMessageLoader", () => {
+describe("ObjectMessageLoader", () => {
     const defaultMessages = {
         "foo": "bar",
     }
@@ -12,7 +12,7 @@ describe("DirectMessageLoader", () => {
         },
         "en": defaultMessages,
     }
-    const loader = new DirectMessageLoader(defaultMessages, messagesByLanguage)
+    const loader = new ObjectMessageLoader(defaultMessages, messagesByLanguage)
 
     describe("loadDefaultMessage", () => {
         it("should return default messages", async () => {
@@ -32,7 +32,7 @@ describe("DirectMessageLoader", () => {
 })
 
 describe("CascadingMessageLoader", () => {
-    const dl1 = new DirectMessageLoader({
+    const dl1 = new ObjectMessageLoader({
         "foo": "bar",
     }, {
         "de": {
@@ -43,7 +43,7 @@ describe("CascadingMessageLoader", () => {
         }
     })
 
-    const dl2 = new DirectMessageLoader({
+    const dl2 = new ObjectMessageLoader({
         "spam": "eggs",
     }, {
         "de": {
