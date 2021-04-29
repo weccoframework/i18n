@@ -76,7 +76,7 @@ set, the message resolver throws an error reporting the missing key.
 
 A message's content may contain placeholders to be replaced with
 actual values passed to `m`. Placeholders are referred to by index
-and use the typical mustache notation, i.e. `{{0}}`to refer to the
+and use the typical mustache notation, i.e. `{{0}}` to refer to the
 first argument.
 
 If you have a messages definition like
@@ -145,7 +145,7 @@ console.log(messageResolver.mpl("inbox.folder.summary", numberOfMessages, "trash
 The following section contains a description of the provided `MessageLoader` implementions.
 Make sure you also check out the source code and doc comments for the classes.
 
-### `ObjectMessageLoader`
+### ObjectMessageLoader
 
 A `MessageLoader` that "loads" messages from a given object. This message loader is typically be
 used in an environment where messages are `import`ed from static files during Javascript assembly.
@@ -164,7 +164,7 @@ const messageResolver = MessageResolver.create(new ObjectMessageLoader(en, {
 This pattern is very easy to get running and works very for few translations with a small number
 of messages.
 
-### `CascadingMessageLoader`
+### CascadingMessageLoader
 
 **TODO**
 

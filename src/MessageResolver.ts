@@ -70,25 +70,16 @@ export class MessageResolver {
         if (typeof msg === "string") {
             return this.reportError(`Expected message for key '${key}' to be plural object but got string "${msg}"`)
         }
+        
+        if (msg.has(amount)) {
+            return this.formatMessage(msg.get(amount), args, amount)
+        }        
 
-        if (typeof msg[amount] !== "undefined") {
-            return this.formatMessage(msg[amount], args, amount)
+        if (msg.has("n")) {
+            return this.formatMessage(msg.get("n"), args, amount)
         }
 
-        const pm = msg as PluralMessage
-
-        if (amount >= 0 && amount <= 12) {
-            const a = `${amount}` as PluralKey
-            if (typeof pm[a] !== "undefined") {
-                return this.formatMessage(pm[a], args, amount)
-            }
-        }
-
-        if (typeof pm.n === "undefined") {
-            return this.reportError(`Missing catch-all in plural message for key '${key}'`)
-        }
-
-        return this.formatMessage(pm.n, args, amount)
+        return this.reportError(`Missing catch-all in plural message for key '${key}'`)
     }
 
     /**
@@ -114,7 +105,17 @@ export class MessageResolver {
      * @returns the resolved key or an error message (depending on `errorReporting`)
      */
     private resolveMessage(key: MessageKey): Message {
-        return (this.localizedMessages ? this.localizedMessages[key] : undefined) ?? this.defaultMessages[key] ?? this.reportError(`Undefined message key: '${key}'`)
+        if (this.localizedMessages) {
+            if (this.localizedMessages.has(key)) {
+                return this.localizedMessages.get(key)
+            }
+        }
+
+        if (this.defaultMessages.has(key)) {
+            return this.defaultMessages.get(key)
+        }
+
+        return this.reportError(`Undefined message key: '${key}'`)
     }
 
     /**

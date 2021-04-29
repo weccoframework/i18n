@@ -30,12 +30,12 @@ export type MessageKey = string
 /**
  * Defines the possible plural key values.
  */
-export type PluralKey = number | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "11" | "12" | "n"
+export type PluralKey = number | "n"
 
 /**
  * Defines the type for message being used to format plurals.
  */
-export type PluralMessage = { [Property in PluralKey]?: string }
+export type PluralMessage = Map<PluralKey, string>
 
 /**
  * Defines the type of a single message which is either a `string` for plain messages
@@ -47,4 +47,4 @@ export type Message = string | PluralMessage
  * `Messages` defines a mapping of message keys (strings) to
  * message patterns.
  */
-export type Messages = { [key: string]: Message }
+export type Messages = Map<MessageKey, Message>

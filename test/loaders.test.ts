@@ -1,5 +1,6 @@
 import { expect } from "iko"
 import { ObjectMessageLoader, CascadingMessageLoader, Messages } from ".."
+import { JsonMessageLoader } from "../src/loaders"
 
 describe("ObjectMessageLoader", () => {
     const defaultMessages = {
@@ -16,13 +17,17 @@ describe("ObjectMessageLoader", () => {
 
     describe("loadDefaultMessage", () => {
         it("should return default messages", async () => {
-            expect(await loader.loadDefaultMessages()).toBe(defaultMessages)
+            expect(await loader.loadDefaultMessages())
+                .toBeMap()
+                .toHave("foo")
         })
     })
 
     describe("loadMessages", () => {
         it("should return messages when language is found", async () => {
-            expect(await loader.loadMessages("de")).toBe(messagesByLanguage.de)
+            expect(await loader.loadMessages("de"))
+                .toBeMap()
+                .toHave("foo")
         })
 
         it("should return undefined when language is not found", async () => {
@@ -64,11 +69,11 @@ describe("CascadingMessageLoader", () => {
         })
 
         it("should merge messages from first", () => {
-            expect(messages.foo).toBe("bar")
+            expect(messages.get("foo")).toBe("bar")
         })
 
         it("should overwrite messages from second", () => {
-            expect(messages.spam).toBe("eggs")
+            expect(messages.get("spam")).toBe("eggs")
         })
     })
 
@@ -79,11 +84,44 @@ describe("CascadingMessageLoader", () => {
         })
 
         it("should merge messages from first", () => {
-            expect(messages.foo).toBe("BAR")
+            expect(messages.get("foo")).toBe("BAR")
         })
 
         it("should overwrite messages from second", () => {
-            expect(messages.spam).toBe("Eier")
+            expect(messages.get("spam")).toBe("Eier")
+        })
+    })
+})
+
+describe("JsonMessageLoader", () => {
+    const messages = {
+        foo: "bar",
+        plural: {
+            "0": "0",
+            "1": "1",
+            "n": "n",
+        },
+    }
+    const source = () => Promise.resolve(JSON.stringify(messages))
+    const loader = new JsonMessageLoader(source, source)
+
+    describe("loadDefaultMessages", () => {
+        let loaded: Messages
+
+        before(async () => {
+            loaded = await loader.loadDefaultMessages()
+        })
+
+        it("should load default messages", () => {
+            expect(loaded.get("foo")).toBe("bar")
+        })
+
+        it("should normalized plural object", () => {
+            expect(loaded.get("plural"))
+                .toBeMap()
+                .toHave(0)
+                .toHave(1)
+                .toHave("n")
         })
     })
 })
