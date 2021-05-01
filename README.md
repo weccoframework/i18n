@@ -25,6 +25,8 @@ by the actual message in the localized version.
 It also allows you to use placeholders in a message to be replaced with actual 
 content (think: mini templates) as well as plural support.
 
+See the [example app](./example) for a full example.
+
 ## Defining Messages
 
 Messages are defined in a datastructure which maps _message keys_ to _message 
