@@ -21,13 +21,19 @@ import { Language, Message, MessageKey, Messages, PluralKey } from "./Messages"
 
 export type MessagesObject = {[messageKey in MessageKey]: string | {[pluralKey: string]: string}}
 
+export type MessagesByLanguage = {[key in Language]: MessagesObject}
+
 /**
  * An implementation of `MessageLoader` that "loads" `Messages` from given Javascript objects.
  * This implemenation is especially usefull when loading messages from JSON files that are included
  * during Javascript assembly.
  */
 export class ObjectMessageLoader implements MessageLoader {
-    constructor(private readonly defaultMessages: MessagesObject, private readonly messagesByLanguage: { [key in Language]: MessagesObject }) { }
+    private readonly messagesByLanguage: MessagesByLanguage
+    
+    constructor(private readonly defaultMessages: MessagesObject, messagesByLanguage?: MessagesByLanguage) { 
+        this.messagesByLanguage = messagesByLanguage ?? {}
+    }
 
     loadDefaultMessages(): Promise<Messages> {
         return Promise.resolve(this.transformMessagesObject(this.defaultMessages))
@@ -122,7 +128,10 @@ export class JsonMessageLoaderError extends Error {
  * i.e. `"1"` with their numeric keys.
  */
 export class JsonMessageLoader implements MessageLoader {
-    constructor(private readonly defaultsLoader: JsonSource, private readonly localizedLoader: JsonSource) { }
+    private readonly localizedLoader: JsonSource
+    constructor(private readonly defaultsLoader: JsonSource, localizedLoader?: JsonSource) { 
+        this.localizedLoader = localizedLoader ?? this.defaultsLoader
+    }
 
     loadDefaultMessages(): Promise<Messages> {
         return this.parseJson(this.defaultsLoader())
