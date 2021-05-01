@@ -1,0 +1,98 @@
+/*
+ * This file is part of wecco.
+ * 
+ * Copyright (c) 2021 Alexander Metzner.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { expect } from "iko"
+import { fetchJsonSource } from ".."
+import { JsonSource } from "../src/loaders"
+
+class ResponseMock implements Response {
+    headers: Headers
+    ok: boolean
+    redirected: boolean
+    status: number
+    statusText: string
+    trailer: Promise<Headers>
+    type: ResponseType
+    url: string
+    body: ReadableStream<Uint8Array> | null
+    bodyUsed: boolean
+
+    private readonly bodyText: string
+
+    constructor (status: number, body: string) {
+        this.status = status
+        this.bodyText = body
+    }
+    
+    async arrayBuffer(): Promise<ArrayBuffer> {
+        throw `Not implemented`
+    }
+
+    async blob(): Promise<Blob> {
+        throw `Not implemented`
+    }
+
+    async formData(): Promise<FormData> {
+        throw `Not implemented`
+    }
+
+    async json(): Promise<any> {
+        return JSON.parse(this.bodyText)
+    }
+
+    async text(): Promise<string> {
+        return this.bodyText
+    }
+    
+    clone(): Response {
+        return this
+    }
+}
+
+describe("fetchJsonSource", () => {
+    let source: JsonSource
+    let url: string
+    let requestInit: RequestInit
+
+    before(() => {
+        global.fetch = function (u: string, i: RequestInit): Promise<Response> {
+            url = u
+            requestInit = i
+
+            return Promise.resolve(new ResponseMock(200, `{"foo": "bar"}`))
+        }
+    
+        source = fetchJsonSource("/test/path", {
+            method: "POST",
+        })
+    })
+
+    it("should load default.json", async () => {        
+        const json = await source()
+        expect(json).toBe(`{"foo": "bar"}`)
+        expect(url).toBe("/test/path/default.json")
+        expect(requestInit.method).toBe("POST")
+    })
+
+    it("should load de.json", async () => {        
+        const json = await source("de")
+        expect(json).toBe(`{"foo": "bar"}`)
+        expect(url).toBe("/test/path/de.json")
+        expect(requestInit.method).toBe("POST")
+    })
+})

@@ -31,12 +31,17 @@ Messages are defined in a datastructure which maps _message keys_ to _message
 content_. In its simplest form, a messages structure looks like the following:
 
 ```javascript
-{
-    greeting: "Hello, world"    
-}
+const messages = new Map()
+    .put("greeting", "Hello, world")
+    .put("bye", "See you soon")
+
 ```
 
-This defines a single message identified by the key `greeting` and the content `"Hello, world"`. 
+This defines a single message identified by the key `greeting` and the content `Hello, world`
+as well as a message with key `bye` and the content `See you soon`. Note that in this
+example all keys and messages are `string`s. While this is true for all message keys,
+messages may also be a nested `Map` when used with _plurals_ (see below).
+
 
 ## Loading Messages
 
@@ -82,9 +87,8 @@ first argument.
 If you have a messages definition like
 
 ```javascript
-{
-    "greeting": "Welcome, {{0}}!",
-}
+const messages = new Map()
+    .put("greeting", "Welcome, {{0}}!")
 ```
 
 and you perform a call like
@@ -108,12 +112,12 @@ You can define a message's content to be an object with keys describing the _amo
 Here is the message definition from the example above:
 
 ```javascript
-{
-    "inbox.summary": {
-        0: "No new message",
-        1: "One new message",
-        n: "{{n}} new messages",
-    },
+const messages = new Map()
+    .put("inbox.summary", new Map()
+        .put(0, "No new message")
+        .put(1, "One new message")
+        .put(n, "{{n}} new messages")
+    )
 }
 ```
 
@@ -127,14 +131,12 @@ console.log(messageResolver.mpl("inbox.summary", numberOfNewMessages))
 You can use placeholders in plural messages and provide additional arguments, such as:
 
 ```javascript
-{
-    "inbox.folder.summary": {
-        0: "Your {{0}} folder contains no messages.",
-        1: "Your {{0}} folder contains one message.",
-        n: "Your {{0}} folder contains {{n}} messages.",
-    }
-}
-
+const messages = new Map()
+    .put("inbox.folder.summary", new Map()
+        .put(0, "Your {{0}} folder contains no messages.")
+        .put(1, "Your {{0}} folder contains one message.")
+        .put(n, "Your {{0}} folder contains {{n}} messages.")
+    )
 // ...
 
 console.log(messageResolver.mpl("inbox.folder.summary", numberOfMessages, "trash"))
@@ -150,11 +152,25 @@ Make sure you also check out the source code and doc comments for the classes.
 A `MessageLoader` that "loads" messages from a given object. This message loader is typically be
 used in an environment where messages are `import`ed from static files during Javascript assembly.
 
+The object loader's input uses plain Javascript `object`s like the following:
+
+```javascript
+{
+    "message.key": "message content",
+    "plural.message.key": {
+        "0": "empty message",
+        "n": "{{n}} message",
+    },
+}
+```
+
+See the following example for how to use the `ObjectMessageLoader`:
+
 ```javascript
 import { MessageResolver, ObjectMessageLoader } from "@weccoframework/i18n"
-import { en, de, fr } from "./messages.json"
+import { en, de, fr } from "./messages"
 
-const messageResolver = MessageResolver.create(new ObjectMessageLoader(en, {
+const messageResolver = await MessageResolver.create(new ObjectMessageLoader(en, {
     en: en,
     de: de,
     fr: fr,
@@ -164,9 +180,74 @@ const messageResolver = MessageResolver.create(new ObjectMessageLoader(en, {
 This pattern is very easy to get running and works very for few translations with a small number
 of messages.
 
-### CascadingMessageLoader
+### JsonMessageLoader
 
-**TODO**
+The `JsonMessageLoader` supports loading messages from `JsonSource`. A `JsonSource` is a function
+which accepts a language as a single argument and retuns a `Promise` resolving to a JSON-formatted
+`string` which defines the messages. The format of the JSON messages is almost identical to the one used
+by the `ObjectMessageLoader`:
+
+```json
+{
+    "message.key": "message content",
+    "plural.message.key": {
+        "0": "empty message",
+        "n": "{{n}} message",
+    },
+}
+```
+
+To construct a `JsonMessagesLoader` you need to pass at least one `JsonSource`. You may pass
+two. In this case the first one is used to load the default messages while the second one is
+used to load the localized messages. 
+
+```javascript
+const jsonSource = (language) => {
+    // ...
+    // return a Promise resolving to a string. 
+    // When loading the default messages, language is undefined
+}
+
+const messageResolver = await MessageResolver.create(new JsonMessageLoader(jsonSource))
+```
+
+#### fetchJsonSource
+
+`i18n` comes with with a ready to use implementation of `JsonSource`
+which uses `fetch` to load messages identified by language. The implementation uses
+the following conventions to load messages:
+
+* all messages are located under a given _base URL_
+* default messages can be loaded from `<baseURL>/default.json`
+* localized messages for `<lang>` can be loaded from `<baseURL>/<lang>.json`
+
+You can pass additional request init options, such as `CORS` mode, change the
+request method (which defaults to `GET`), set headers, ...
+
+### CascadingMessageLoader
+The `CascadingMessageLoader` loads messages by using a set of underlying `MessageLoader`s
+and merging the messages returned by each loader together in a way similiar to how CSS
+rules are merged (thus the name). Use this loader to get an aggregated set of messages
+from multiple sources.
+
+The following (rather academic) example demonstrates the merging.
+
+```javascript
+
+const loader1 = new ObjectMessageLoader({
+    foo: "foo",
+    bar: "bar",
+})
+
+const loader2 = new ObjectMessageLoader({
+    bar: "Bar",
+    spam: "Eggs",
+})
+
+const messageResolver = await MessageResolver.create(new CascadingMessageLoader(loader1, loader2))
+
+console.log(messageResolver.m("bar")) // Logs: Bar
+```
 
 # Author
 
