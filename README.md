@@ -6,14 +6,7 @@ A simple localization framework for web applications.
 
 # Installation
 
-`i18n` is available via [Github NPM Packages](https://docs.github.com/en/packages/guides/configuring-npm-for-use-with-github-packages). 
-To install it, create a file `.npmrc` next to your `package.json` with the following content:
-
-```
-@weccoframework:registry=https://npm.pkg.github.com
-```
-
-After you created this file, you can install `@weccoframework/i18n` as a standard NPM dependency.
+`i18n` is available via npm as `@weccoframework/i18n`.
 
 # Usage
 
