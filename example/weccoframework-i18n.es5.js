@@ -528,7 +528,7 @@ function dateTimeFormatter(locale, opts) {
     };
 }
 /**
- * Creates a `Formatter` formatting durations given as a number of seconds using a
+ * Creates a `Formatter` formatting durations given as a number of milliseconds using a
  * `Intl.RelativeTimeFormat`.
  * @param locale the locale
  * @param opts additional options
@@ -538,7 +538,7 @@ function relativeDateFormatter(locale, opts) {
     const format = new Intl.RelativeTimeFormat(locale.tag, opts);
     return (val) => {
         const negativeFactor = val < 0 ? -1 : 1;
-        val = Math.floor(Math.abs(val));
+        val = Math.floor(Math.abs(val / 1000));
         if (val < 60) {
             return format.format(negativeFactor * val, "second");
         }
