@@ -158,7 +158,7 @@ const messages = new Map()
 
 // ...
 
-console.log(messageResolver.m("created", (created.getTime() - new Date().getTime())) / 1000)
+console.log(messageResolver.m("created", (created.getTime() - new Date().getTime())))
 ```
 
 You can define your own formatters or use the standard formatters or do both. To define a formatter
@@ -192,7 +192,7 @@ Formatter | Formats/Accepts | Description
 `date` | `Date`, `number` | Formats the given value as date without time in a compact, short notation. Uses `Intl.DateTimeFormat` to do the formatting.
 `time` | `Date`, `number` | Formats the given value as time without date in a compact, short notation. Uses `Intl.DateTimeFormat` to do the formatting.
 `datetime` | `Date`, `number` | Formats the given value as a date and time in a compact, short notation. Uses `Intl.DateTimeFormat` to do the formatting.
-`relativetime` | `number` | Formats the given number of seconds as a relative time. Determines the unit (seconds, minutes, ...) to be the most relevant unit with days being the larges used unit. Uses `Intl.RelativeDateFormat` to do the formatting.
+`relativetime` | `number` | Formats the given number of milliseconds as a relative time. Determines the unit (seconds, minutes, ...) to be the most relevant unit with days being the larges used unit. Uses `Intl.RelativeDateFormat` to do the formatting.
 `integer` | `number` | Formats the given number as an integer omitting all fraction digits. Uses `Intl.NumberFormat` to do the formatting.
 
 ## Loaders

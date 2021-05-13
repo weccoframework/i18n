@@ -39,7 +39,7 @@ export function dateTimeFormatter(locale: Locale, opts?: Intl.DateTimeFormatOpti
 }
 
 /**
- * Creates a `Formatter` formatting durations given as a number of seconds using a
+ * Creates a `Formatter` formatting durations given as a number of milliseconds using a
  * `Intl.RelativeTimeFormat`.
  * @param locale the locale
  * @param opts additional options
@@ -50,7 +50,7 @@ export function relativeDateFormatter(locale: Locale, opts?: Intl.RelativeTimeFo
     return (val: number): string => {
         const negativeFactor = val < 0 ? -1 : 1
 
-        val = Math.floor(Math.abs(val))
+        val = Math.floor(Math.abs(val / 1000))
         if (val < 60) {
             return format.format(negativeFactor * val, "second")
         }

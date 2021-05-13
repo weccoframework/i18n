@@ -46,35 +46,35 @@ describe("formatters", () => {
         const formatter = relativeDateFormatter(new Locale("de-DE"))
 
         it("should format seconds in the future", () => {
-            expect(formatter(45, contextMock)).toBe("in 45 Sekunden")
+            expect(formatter(45 * 1000, contextMock)).toBe("in 45 Sekunden")
         })
 
         it("should format seconds in the past", () => {
-            expect(formatter(-45, contextMock)).toBe("vor 45 Sekunden")
+            expect(formatter(-45 * 1000, contextMock)).toBe("vor 45 Sekunden")
         })
 
         it("should format minutes in the future", () => {
-            expect(formatter(45 * 60, contextMock)).toBe("in 45 Minuten")
+            expect(formatter(45 * 60 * 1000, contextMock)).toBe("in 45 Minuten")
         })
 
         it("should format minutes in the past", () => {
-            expect(formatter(-45 * 60, contextMock)).toBe("vor 45 Minuten")
+            expect(formatter(-45 * 60 * 1000, contextMock)).toBe("vor 45 Minuten")
         })
 
         it("should format hours in the future", () => {
-            expect(formatter(18 * 60 * 60, contextMock)).toBe("in 18 Stunden")
+            expect(formatter(18 * 60 * 60 * 1000, contextMock)).toBe("in 18 Stunden")
         })
 
         it("should format hours in the past", () => {
-            expect(formatter(-18 * 60 * 60, contextMock)).toBe("vor 18 Stunden")
+            expect(formatter(-18 * 60 * 60 * 1000, contextMock)).toBe("vor 18 Stunden")
         })
 
         it("should format days in the future", () => {
-            expect(formatter(18 * 60 * 60 * 24, contextMock)).toBe("in 18 Tagen")
+            expect(formatter(18 * 60 * 60 * 24 * 1000, contextMock)).toBe("in 18 Tagen")
         })
 
         it("should format days in the past", () => {
-            expect(formatter(-18 * 60 * 60 * 24, contextMock)).toBe("vor 18 Tagen")
+            expect(formatter(-18 * 60 * 60 * 24 * 1000, contextMock)).toBe("vor 18 Tagen")
         })
     })
 })
