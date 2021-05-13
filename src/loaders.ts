@@ -16,41 +16,55 @@
  * limitations under the License.
  */
 
-import { MessageLoader } from "./MessageLoader"
-import { Language, Message, MessageKey, Messages, PluralKey } from "./Messages"
+import { Bundle, Formatter, Message, MessageKey, PluralKey } from "./bundle"
+import { BundleLoader } from "./loader"
+import { Locale } from "./locale"
 
-export type MessagesObject = {[messageKey in MessageKey]: string | {[pluralKey: string]: string}}
+export interface BundleObject {
+    messages?: { [messageKey: string]: string | {[pluralKey: string]: string} }
+    formatters?: {[formatterKey in string]: Formatter}
+}
 
-export type MessagesByLanguage = {[key in Language]: MessagesObject}
+export type BundlesByLanguage = {[locale: string]: BundleObject}
 
 /**
- * An implementation of `MessageLoader` that "loads" `Messages` from given Javascript objects.
+ * An implementation of `BundleLoader` that "loads" `Bundle`s from given Javascript objects.
  * This implemenation is especially usefull when loading messages from JSON files that are included
  * during Javascript assembly.
  */
-export class ObjectMessageLoader implements MessageLoader {
-    private readonly messagesByLanguage: MessagesByLanguage
+export class ObjectBundleLoader implements BundleLoader {
+    private readonly bundlesByLanguage: BundlesByLanguage
     
-    constructor(private readonly defaultMessages: MessagesObject, messagesByLanguage?: MessagesByLanguage) { 
-        this.messagesByLanguage = messagesByLanguage ?? {}
+    constructor(bundlesByLanguage?: BundlesByLanguage) { 
+        this.bundlesByLanguage = bundlesByLanguage ?? {}
     }
 
-    loadDefaultMessages(): Promise<Messages> {
-        return Promise.resolve(this.transformMessagesObject(this.defaultMessages))
-    }
-
-    loadMessages(language: Language): Promise<Messages | undefined> {
-        if (typeof this.messagesByLanguage[language] === "undefined") {
+    load(locale: Locale): Promise<Bundle | undefined> {
+        if (typeof this.bundlesByLanguage[locale.tag] === "undefined") {
+            if (!locale.hasOnlyLang) {
+                return this.load(locale.stripAllButLang())
+            }
             return Promise.resolve(undefined)
         }
 
-        return Promise.resolve(this.transformMessagesObject(this.messagesByLanguage[language]))
+        return Promise.resolve(this.transformBundle(this.bundlesByLanguage[locale.tag]))
     }
 
-    private transformMessagesObject(o: MessagesObject): Messages {
-        const m = new Map<MessageKey, Message>()
-        Object.keys(o).forEach(key => m.set(key, this.transformMessage(o[key])))
-        return m
+    private transformBundle(o: BundleObject): Bundle {
+        const bundle: Bundle = {
+            messages: new Map<MessageKey, Message>(),
+            formatters: new Map<string, Formatter>(),
+        }
+        
+        if (typeof o.messages !== "undefined") {
+            Object.keys(o.messages).forEach(key => bundle.messages.set(key, this.transformMessage(o.messages[key])))
+        }
+        
+        if (typeof o.formatters !== "undefined") {
+            Object.keys(o.formatters).forEach(key => bundle.formatters.set(key, o.formatters[key]))
+        }
+
+        return bundle
     }
 
     private transformMessage(m: string | {[pluralKey: string]: string}): Message {
@@ -67,42 +81,44 @@ export class ObjectMessageLoader implements MessageLoader {
 }
 
 /**
- * An implementation of `MessageLoader` that merges `Messages` loaded from
- * multiple `MessageLoaders` before returning them to the caller.
+ * An implementation of `BundleLoader` that merges `Messages` loaded from
+ * multiple `BundleLoaders` before returning them to the caller.
  * 
  * The order in which loaders are given to instances of this class is
  * important as it defines how single messages get overwritten.
  */
-export class CascadingMessageLoader implements MessageLoader {
-    private readonly loaders: Array<MessageLoader>
+export class CascadingBundleLoader implements BundleLoader {
+    private readonly loaders: Array<BundleLoader>
 
-    constructor(...loaders: Array<MessageLoader>) {
+    constructor(...loaders: Array<BundleLoader>) {
         if (loaders.length < 2) {
             throw new Error(`Invalid number of loaders to merge: ${loaders.length}`)
         }
         this.loaders = loaders
     }
 
-    async loadDefaultMessages(): Promise<Messages> {
-        return this.mergeMessages(this.loaders.map(l => l.loadDefaultMessages()))
+    load(locale: Locale): Promise<Bundle | undefined> {
+        return this.mergeBundle(this.loaders.map(l => l.load(locale)))
     }
 
-    loadMessages(language: Language): Promise<Messages | undefined> {
-        return this.mergeMessages(this.loaders.map(l => l.loadMessages(language)))
-    }
-
-    private async mergeMessages(input: Array<Promise<Messages | undefined>>): Promise<Messages> {
+    private async mergeBundle(input: Array<Promise<Bundle | undefined>>): Promise<Bundle> {
         const loaded = await Promise.all(input)
-        const msg = loaded[0] ?? new Map<MessageKey, Message>()        
         
-        loaded.slice(1).forEach(m => {
-            if (!m) {
+        const bundle: Bundle = loaded[0] ?? {
+            messages: new Map<MessageKey, Message>(),
+            formatters: new Map<string, Formatter>(),
+        }
+        
+        loaded.slice(1).forEach(b => {
+            if (!b) {
                 return
             }
-            m.forEach((val, key) => msg.set(key, val))
+            
+            b.messages.forEach((val, key) => bundle.messages.set(key, val))
+            b.formatters.forEach((val, key) => bundle.formatters.set(key, val))
         })
 
-        return msg
+        return bundle
     }
 }
 
@@ -113,47 +129,49 @@ export type JsonMessages = {[key: string]: string | {[pluralKey: string]: string
  * of a message.
  */
 export interface JsonSource {
-    (language?: Language): Promise<string | undefined>
+    (locale: Locale): Promise<string | undefined>
 }
 
-export class JsonMessageLoaderError extends Error {
+/**
+ * Error stating that loading some JSON ressource failed.
+ */
+export class JsonBundleLoaderError extends Error {
     constructor (msg: string) {
         super(msg)
     }
 }
 
 /**
- * A `MessageLoader` that loads messages from `JsonSource`s. The loader parses
+ * A `BundleLoader` that loads messages from `JsonSource`s. The loader parses
  * the JSON and normalizes the plural messages by replacing string notated numbers,
  * i.e. `"1"` with their numeric keys.
  */
-export class JsonMessageLoader implements MessageLoader {
-    private readonly localizedLoader: JsonSource
-    constructor(private readonly defaultsLoader: JsonSource, localizedLoader?: JsonSource) { 
-        this.localizedLoader = localizedLoader ?? this.defaultsLoader
+export class JsonBundleLoader implements BundleLoader {
+    constructor(private readonly source: JsonSource) { }
+
+    load(locale: Locale): Promise<Bundle | undefined> {
+        return this.source(locale)
+                .then(s => typeof s === "undefined" && !locale.hasOnlyLang 
+                    ? this.load(locale.stripAllButLang()) 
+                    : this.parseJson(s)
+                )
     }
 
-    loadDefaultMessages(): Promise<Messages> {
-        return this.parseJson(this.defaultsLoader())
-    }
-
-    loadMessages(language: Language): Promise<Messages | undefined> {
-        return this.parseJson(this.localizedLoader(language))
-    }
-
-    private async parseJson(input: Promise<string | undefined>): Promise<Messages | undefined> {
-        const jsonString = await input
+    private parseJson(jsonString: string | undefined): Bundle | undefined {
         if (typeof jsonString === "undefined") {
             return jsonString
         }
 
-        const messages = new Map<MessageKey, Message>()
+        const bundle = {
+            messages: new Map<MessageKey, Message>(),
+            formatters: new Map<string, Formatter>(),
+        }
 
         const parsed = JSON.parse(jsonString) as JsonMessages
         Object.keys(parsed).forEach(messageKey => {
             const msg = parsed[messageKey] 
             if (typeof msg === "string") {
-                messages.set(messageKey, msg)
+                bundle.messages.set(messageKey, msg)
             } else {
                 const pluralMessage = new Map<PluralKey, string>()
                 Object.keys(parsed[messageKey]).forEach((pluralKey: string) => {
@@ -162,13 +180,13 @@ export class JsonMessageLoader implements MessageLoader {
                     } else if (pluralKey === "n") {
                         pluralMessage.set("n", msg[pluralKey])                    
                     } else {
-                        throw new JsonMessageLoaderError(`invalid plural key '${pluralKey}' for message key '${messageKey}'`)
+                        throw new JsonBundleLoaderError(`invalid plural key '${pluralKey}' for message key '${messageKey}'`)
                     }
                 })
-                messages.set(messageKey, pluralMessage)
+                bundle.messages.set(messageKey, pluralMessage)
             }
         })
 
-        return messages
+        return bundle
     }
 }

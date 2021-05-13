@@ -17,8 +17,7 @@
  */
 
 import { expect } from "iko"
-import { fetchJsonSource } from ".."
-import { JsonSource } from "../src/loaders"
+import { fetchJsonSource, JsonSource, Locale } from ".."
 
 class ResponseMock implements Response {
     headers: Headers
@@ -82,15 +81,8 @@ describe("fetchJsonSource", () => {
         })
     })
 
-    it("should load default.json", async () => {        
-        const json = await source()
-        expect(json).toBe(`{"foo": "bar"}`)
-        expect(url).toBe("/test/path/default.json")
-        expect(requestInit.method).toBe("POST")
-    })
-
     it("should load de.json", async () => {        
-        const json = await source("de")
+        const json = await source(new Locale("de"))
         expect(json).toBe(`{"foo": "bar"}`)
         expect(url).toBe("/test/path/de.json")
         expect(requestInit.method).toBe("POST")

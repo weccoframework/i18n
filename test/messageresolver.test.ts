@@ -1,38 +1,32 @@
 import { expect } from "iko"
-import { MessageResolver, ObjectMessageLoader, MessageResolvingError } from ".."
+import { MessageResolver, ObjectBundleLoader, MessageResolvingError, Locale } from ".."
+import { ResolvingContext } from "../src/bundle"
 
 describe("MessageResolver", () => {
     let messageResolver: MessageResolver
 
     before(async () => {
-        messageResolver = await MessageResolver.create(new ObjectMessageLoader({
-            "close": "Close",
-            "msg": "Welcome, {{0}}",
-            "numberOfMails": {
-                "0": "No mails",
-                "1": "One mail",
-                "2": "Two mails",
-                "n": "{{n}} mails",
-            }
-        }, {
+        messageResolver = await MessageResolver.create(new ObjectBundleLoader({
             "de": {
-                "msg": "Herzlich Willkommen, {{0}}",
-                "numberOfMails": {
-                    0: "Keine Nachrichten für {{0}}",
-                    1: "Eine Nachricht für {{0}}",
-                    "n": "{{n}} Nachrichten für {{0}}",
+                messages: {
+                    "msg": "Herzlich Willkommen, {{0}}",
+                    "loggedInSince": "Sie sind seit {{0:date}} eingeloggt.",
+                    "numberOfMails": {
+                        0: "Keine Nachrichten für {{0}}",
+                        1: "Eine Nachricht für {{0}}",
+                        "n": "{{n}} Nachrichten für {{0}}",
+                    },
                 },
+                formatters: {
+                    "date": (val: any, context: ResolvingContext) => new Intl.DateTimeFormat(context.locale.tag).format(val)
+                }
             },
-        }), "de")
+        }), new Locale("de"))
     })
 
     describe("m", () => {
         it("should resolve and format message", () => {
             expect(messageResolver.m("msg", "John")).toBe("Herzlich Willkommen, John")
-        })
-
-        it("should resolve fallback message", () => {
-            expect(messageResolver.m("close")).toBe("Close")
         })
     })
 
@@ -47,6 +41,12 @@ describe("MessageResolver", () => {
 
         it("should format message for 2", () => {
             expect(messageResolver.mpl("numberOfMails", 2, "John")).toBe("2 Nachrichten für John")
+        })
+    })
+
+    describe("formats", () => {
+        it("should use format", () => {
+            expect(messageResolver.m("loggedInSince", new Date("2006-01-02"))).toBe("Sie sind seit 2.1.2006 eingeloggt.")
         })
     })
 

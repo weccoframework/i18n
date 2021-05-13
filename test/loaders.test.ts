@@ -17,128 +17,182 @@
  */
 
 import { expect } from "iko"
-import { ObjectMessageLoader, CascadingMessageLoader, JsonMessageLoader, Messages } from ".."
+import { ObjectBundleLoader, CascadingBundleLoader, JsonBundleLoader, Bundle, BundleObject, Locale } from ".."
+import { JsonSource } from "../src/loaders"
 
-describe("ObjectMessageLoader", () => {
-    const defaultMessages = {
-        "foo": "bar",
-    }
-
+describe("ObjectBundleLoader", () => {
     const messagesByLanguage = {
         "de": {
-            "foo": "Bar",
+            messages: {
+                "foo": "Bar",
+            },
         },
-        "en": defaultMessages,
+        "en": {
+            messages: {
+                "foo": "bar",
+            },
+        },
     }
-    const loader = new ObjectMessageLoader(defaultMessages, messagesByLanguage)
+    const loader = new ObjectBundleLoader(messagesByLanguage)
 
-    describe("loadDefaultMessage", () => {
-        it("should return default messages", async () => {
-            expect(await loader.loadDefaultMessages())
-                .toBeMap()
-                .toHave("foo")
+    describe("load", () => {
+        describe("language found", () => {
+            let bundle: Bundle | undefined
+
+            before(async () => {
+                bundle = await loader.load(new Locale("de"))
+            })
+
+            it("should return bundle languages", async () => {
+                expect(bundle.messages)
+                    .toBeMap()
+                    .toHave("foo")
+            })
+
+            it("should return bundle formatters", async () => {
+                expect(bundle.formatters)
+                    .toBeMap()
+            })
         })
-    })
 
-    describe("loadMessages", () => {
-        it("should return messages when language is found", async () => {
-            expect(await loader.loadMessages("de"))
-                .toBeMap()
-                .toHave("foo")
+        describe("more specific locale", () => {
+            it("should return best match", async () => {
+                const bundle = await loader.load(new Locale("de-DE"))
+                expect(bundle)
+                    .toBeObject()
+            })
         })
 
-        it("should return undefined when language is not found", async () => {
-            expect(await loader.loadMessages("es")).toBeUndefined()
+        describe("language not found", () => {
+            it("should return undefined when language is not found", async () => {
+                expect(await loader.load(new Locale("es"))).toBeUndefined()
+            })
         })
     })
 })
 
-describe("CascadingMessageLoader", () => {
-    const dl1 = new ObjectMessageLoader({
-        "foo": "bar",
-    }, {
+describe("CascadingBundleLoader", () => {
+    const dl1 = new ObjectBundleLoader({
         "de": {
-            "foo": "Bar",
+            messages: {
+                "foo": "Bar",
+            },
+            formatters: {
+                "foo": v => `${v}`,
+            },
         },
         "en": {
-            "foo": "bar",
-        }
+            messages: {
+                "foo": "bar",
+            },
+        },
     })
 
-    const dl2 = new ObjectMessageLoader({
-        "spam": "eggs",
-    }, {
+    const dl2 = new ObjectBundleLoader({
         "de": {
-            "foo": "BAR",
-            "spam": "Eier",
+            messages: {
+
+                "foo": "BAR",
+                "spam": "Eier",
+            },
+            formatters: {
+                "bar": v => `${v}`,
+            },
         },
         "en": {
-            "spam": "eggs",
-        }
+            messages: {
+                "spam": "eggs",
+            },
+        },
     })
 
-    const loader = new CascadingMessageLoader(dl1, dl2)
+    const loader = new CascadingBundleLoader(dl1, dl2)
 
-    describe("loadDefaultMessages", () => {
-        let messages: Messages
+    describe("load", () => {
+        let bundle: Bundle
         before(async () => {
-            messages = await loader.loadDefaultMessages()
+            bundle = await loader.load(new Locale("de"))
         })
 
-        it("should merge messages from first", () => {
-            expect(messages.get("foo")).toBe("bar")
+        it("should merge bundle from first", () => {
+            expect(bundle.messages.get("foo")).toBe("BAR")
         })
 
-        it("should overwrite messages from second", () => {
-            expect(messages.get("spam")).toBe("eggs")
-        })
-    })
-
-    describe("loadMessages", () => {
-        let messages: Messages
-        before(async () => {
-            messages = await loader.loadMessages("de")
+        it("should overwrite bundle from second", () => {
+            expect(bundle.messages.get("spam")).toBe("Eier")
         })
 
-        it("should merge messages from first", () => {
-            expect(messages.get("foo")).toBe("BAR")
-        })
-
-        it("should overwrite messages from second", () => {
-            expect(messages.get("spam")).toBe("Eier")
+        it("should merge formatters", () => {
+            expect(bundle.formatters)
+                .toBeMap()
+                .toHave("foo")
+                .toHave("bar")
         })
     })
 })
 
-describe("JsonMessageLoader", () => {
-    const messages = {
-        foo: "bar",
-        plural: {
-            "0": "0",
-            "1": "1",
-            "n": "n",
-        },
-    }
-    const source = () => Promise.resolve(JSON.stringify(messages))
-    const loader = new JsonMessageLoader(source, source)
-
-    describe("loadDefaultMessages", () => {
-        let loaded: Messages
-
-        before(async () => {
-            loaded = await loader.loadDefaultMessages()
-        })
-
-        it("should load default messages", () => {
-            expect(loaded.get("foo")).toBe("bar")
-        })
-
-        it("should normalized plural object", () => {
-            expect(loaded.get("plural"))
+describe("JsonBundleLoader", () => {
+    describe("load", () => {
+        describe("with exact locale match", () => {
+            let loaded: Bundle
+            
+            before(async () => {
+                const bundle = {
+                    foo: "bar",
+                    plural: {
+                        "0": "0",
+                        "1": "1",
+                        "n": "n",
+                    },
+                }
+                
+                const source = () => Promise.resolve(JSON.stringify(bundle))
+                const loader = new JsonBundleLoader(source)            
+                loaded = await loader.load(new Locale("en"))
+            })
+            
+            it("should load bundle", () => {
+                expect(loaded.messages.get("foo")).toBe("bar")
+            })
+            
+            it("should normalized plural object", () => {
+                expect(loaded.messages.get("plural"))
                 .toBeMap()
                 .toHave(0)
                 .toHave(1)
                 .toHave("n")
+            })
+        })
+
+        describe("with non-exact locale match", () => {
+            let loaded: Bundle
+            
+            before(async () => {
+                const bundle = {
+                    foo: "bar",
+                    plural: {
+                        "0": "0",
+                        "1": "1",
+                        "n": "n",
+                    },
+                }
+                
+                const source: JsonSource = (locale: Locale) => Promise.resolve(locale.tag === "en" ? JSON.stringify(bundle) : undefined)
+                const loader = new JsonBundleLoader(source)
+                loaded = await loader.load(new Locale("en-US"))
+            })
+            
+            it("should load bundle", () => {
+                expect(loaded.messages.get("foo")).toBe("bar")
+            })
+            
+            it("should normalized plural object", () => {
+                expect(loaded.messages.get("plural"))
+                .toBeMap()
+                .toHave(0)
+                .toHave(1)
+                .toHave("n")
+            })
         })
     })
 })

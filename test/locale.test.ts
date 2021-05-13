@@ -16,18 +16,17 @@
  * limitations under the License.
  */
 
-import { Locale } from "./locale"
+import { expect } from "iko"
+import { Locale } from ".."
 
-/**
- * Determines the locale used by the given browser.
- * @returns the preferred language of the current browser
- */
-export function determineNavigatorLocale(): Locale {
-    if (navigator.languages && navigator.languages.length > 0) {
-        return new Locale(navigator.languages[0])
-    } else if (navigator.language) {
-        return new Locale(navigator.language)
-    }
+describe("Locale", () => {
+    describe("lang", () => {
+        it("should return lang when locale only has lang", () => {
+            expect(new Locale("en").lang).toBe("en")
+        })
 
-    return new Locale("en")
-}
+        it("should return lang when locale has lang and region", () => {
+            expect(new Locale("en-US").lang).toBe("en")
+        })
+    })
+})

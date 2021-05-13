@@ -16,8 +16,10 @@
  * limitations under the License.
  */
 
-export { Language, Messages } from "./src/Messages"
-export { MessageLoader } from "./src/MessageLoader"
-export { ObjectMessageLoader, CascadingMessageLoader, JsonMessageLoader, JsonSource } from "./src/loaders"
-export { MessageResolver, MessageResolvingError } from "./src/MessageResolver"
-export { fetchJsonSource} from "./src/jsonsource"
+export { Locale } from "./src/locale"
+export { Messages, PluralMessage, Bundle, Formatter, ResolvingContext } from "./src/bundle"
+export { BundleLoader } from "./src/loader"
+export { MessageResolver, MessageResolvingError } from "./src/messageresolver"
+export { BundleObject, ObjectBundleLoader, CascadingBundleLoader, JsonBundleLoader, JsonSource } from "./src/loaders"
+export { fetchJsonSource } from "./src/jsonsource"
+export { dateTimeFormatter, relativeDateFormatter, numberFormatter, registerStandardFormatters } from "./src/formatters"
