@@ -17,12 +17,12 @@
  */
 
 import { JsonSource } from "./loaders"
-import { Language } from "./Messages"
+import { Locale } from "./locale"
 
 /**
  * Creates new `JsonSource` which loads messages by making a HTTP `GET` request.
- * The URL is constructed from the given `baseUrl` and the language. For every
- * language, the URL is `<baseUrl>/<language>.json`. When language is undefined,
+ * The URL is constructed from the given `baseUrl` and the locale. For every
+ * locale, the URL is `<baseUrl>/<locale>.json`. When locale is `undefined`,
  * the default messages is loaded from `<baseUrl>/default.json`.
  * 
  * @param baseUrl the baseUrl
@@ -30,8 +30,8 @@ import { Language } from "./Messages"
  * @returns a `JsonSource`
  */
 export function fetchJsonSource(baseUrl: string, options?: RequestInit): JsonSource {
-    return (language?: Language): Promise<string | undefined> => {
-        const url = `${baseUrl}/${language ?? "default"}.json`
+    return (locale: Locale): Promise<string | undefined> => {
+        const url = `${baseUrl}/${locale?.tag ?? "default"}.json`
         return fetch(url, {
             body: options?.body,
             cache: options?.cache,

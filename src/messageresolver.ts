@@ -16,9 +16,10 @@
  * limitations under the License.
  */
 
-import { MessageLoader } from "./MessageLoader"
-import { Language, Message, MessageKey, Messages, PluralKey, PluralMessage } from "./Messages"
-import { determineNavigatorLanguage } from "./utils"
+import { Message, MessageKey, Bundle, ResolvingContext } from "./bundle"
+import { BundleLoader } from "./loader"
+import { Locale } from "./locale"
+import { determineNavigatorLocale } from "./utils"
 
 /**
  * `MessageResolver` resolves and formats strings from multiple `Messages`.
@@ -32,7 +33,7 @@ import { determineNavigatorLanguage } from "./utils"
  * 
  * In addition, `MessageResolver` supports pluralization by appending `.1` or `.n` to the key.
  */
-export class MessageResolver {
+export class MessageResolver implements ResolvingContext {
     /**
      * `errorReporting` defines how errors during message resolving are reported. When
      * set to `message` a formatted message string is returned. Use this mode for development.
@@ -42,19 +43,22 @@ export class MessageResolver {
 
     /**
      * Factory method that creates a `MessageResolver` from the messages loaded by the given
-     * `MessageLoader`. This method uses either the given `Language` or the browser's default
-     * language for determining localized versions of the messages.
+     * `BundleLoader`. This method uses either the given `Locale` or the browser's default
+     * Locale for determining localized versions of the messages.
      * @param loader the message loader
-     * @param language optional language to use. Defaults to the browser's language
-     * @returns a Promise resolving to a `MessageLoader` instance
+     * @param Locale optional Locale to use. Defaults to the browser's Locale
+     * @returns a Promise resolving to a `BundleLoader` instance
      */
-    static async create(loader: MessageLoader, language?: Language): Promise<MessageResolver> {
-        const lang = language ?? determineNavigatorLanguage()
-        const [defaultMessages, localizedMessages] = await Promise.all([loader.loadDefaultMessages(), loader.loadMessages(lang)])
-        return new MessageResolver(defaultMessages, localizedMessages)
+    static async create(loader: BundleLoader, locale?: Locale): Promise<MessageResolver> {
+        const localeToUse = locale ?? determineNavigatorLocale()
+        const bundle = await loader.load(localeToUse) ?? {
+            messages: new Map(),
+            formatters: new Map(),
+        }
+        return new MessageResolver(localeToUse, bundle)
     }
 
-    constructor(private readonly defaultMessages: Messages, private readonly localizedMessages?: Messages) { }
+    constructor(readonly locale: Locale, readonly bundle: Bundle) { }
 
     /**
      * Resolves the pluralized version of the given message key based on the given amount.
@@ -70,10 +74,10 @@ export class MessageResolver {
         if (typeof msg === "string") {
             return this.reportError(`Expected message for key '${key}' to be plural object but got string "${msg}"`)
         }
-        
+
         if (msg.has(amount)) {
             return this.formatMessage(msg.get(amount), args, amount)
-        }        
+        }
 
         if (msg.has("n")) {
             return this.formatMessage(msg.get("n"), args, amount)
@@ -105,14 +109,8 @@ export class MessageResolver {
      * @returns the resolved key or an error message (depending on `errorReporting`)
      */
     private resolveMessage(key: MessageKey): Message {
-        if (this.localizedMessages) {
-            if (this.localizedMessages.has(key)) {
-                return this.localizedMessages.get(key)
-            }
-        }
-
-        if (this.defaultMessages.has(key)) {
-            return this.defaultMessages.get(key)
+        if (this.bundle.messages.has(key)) {
+            return this.bundle.messages.get(key)
         }
 
         return this.reportError(`Undefined message key: '${key}'`)
@@ -127,16 +125,57 @@ export class MessageResolver {
      * @returns the formatted message
      */
     private formatMessage(msg: string, args: Array<unknown>, amount?: number): string {
-        for (let i = 0; i < args.length; i++) {
-            msg = msg.replace(`{{${i}}}`, `${args[i]}`)
+        const parts = msg.split(/(\{\{(\d+|n)(:[a-zA-Z]+)?\}\})/)
+        
+        if (parts.length === 1) {
+            // Message contains no placeholders. Return the message
+            return msg
         }
 
-        if (typeof amount !== "undefined") {
-            msg = msg.replace("{{n}}", `${amount}`)
+        let result = ""
+        let i = 0
+        while (i < parts.length) {
+            // The first part is always a string literal
+            result += parts[i]
+            i++        
+            if (i < parts.length) {
+                // If there are more parts, we find at least
+                // three:
+                // - the whole marker (ignored)
+                // - the index or "n"
+                // - the format to apply (may be undefined)
+                i++
+                let val: any
+                if (parts[i] === "n") {
+                    val = amount
+                } else {
+                    val = args[parseInt(parts[i])]
+                }
+                i++
+                
+                if (typeof parts[i] === "undefined") {
+                    // No format has been given
+                    result += val
+                } else {
+                    // Apply the format. parts[i] contains
+                    // the leading colon so we remove that
+                    // first
+                    const formatter = this.bundle.formatters.get(parts[i].substr(1))
+                    if (typeof formatter === "undefined") {
+                        if (this.errorReporting === "message") {
+                            result += `Missing formatter: ${parts[i].substr(1)}`
+                        } else {
+                            throw new MessageResolvingError(`Missing formatter: ${parts[i].substr(1)}`)
+                        }
+                    } else {
+                        result += formatter(val, this)
+                    }
+                }
+                i++
+            }
         }
 
-        return msg
-
+        return result
     }
 
     private reportError(msg: string): string {
