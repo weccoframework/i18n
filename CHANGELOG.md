@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 0.3.0
+
+* Introduce `fetchJson` and `fetchJsonByLocale`
+* Add support for `$` message keys to directly invoke a `Formatter`
+
 ## Version 0.2.0
 
 * Introduction of `Formatter`s
