@@ -175,6 +175,21 @@ const bundle = {
 }
 ```
 
+#### Directly invoking a Formatter
+
+In some cases you want directly invoke a formatter on a value. You can of course define a message
+key (named like the formatter) which contains a single placeholder with formatter instruction. But
+this is approach involves a lot of boilerplate code to write.
+
+`i18n` provides a shortcut syntax. You can invoke the `m` method passing in a message key starting
+with a dollar sign `$` followed by the formatters name. Additionally, you have to pass the single
+argument to format. The `MessageResolver` will not resolve this message key using the normal 
+resolving strategy but look up the formatter and invoke it directly:
+
+```javascript
+messageResolver.m("$date", new Date())
+```
+
 #### Standard Formatters
 
 `i18n` provides a set of _standard formatters_ that format dates and times (and a combination of both),
