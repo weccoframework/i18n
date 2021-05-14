@@ -28,6 +28,10 @@ describe("MessageResolver", () => {
         it("should resolve and format message", () => {
             expect(messageResolver.m("msg", "John")).toBe("Herzlich Willkommen, John")
         })
+
+        it("should invoke formatter when message key starts with $", () => {
+            expect(messageResolver.m("$date", new Date("2006-01-02T15:04:05"))).toBe("2.1.2006")
+        })
     })
 
     describe("mpl", () => {

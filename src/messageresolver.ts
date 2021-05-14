@@ -93,6 +93,21 @@ export class MessageResolver implements ResolvingContext {
      * @returns the formatted message or an error message
      */
     m(key: MessageKey, ...args: Array<unknown>): string {
+        if (key.startsWith("$")) {
+            // If the message key starts with a dollar sign, it is a reference
+            // to a formatter to be applied directly to the first argument.
+            if (args.length !== 1) {
+                return this.reportError(`Formatter message must be formatted with exactly one argument, ${args} given`)
+            }
+            
+            const formatterKey = key.substr(1)
+            if (!this.bundle.formatters.has(formatterKey)) {
+                return this.reportError(`Missing formatter: ${formatterKey}`)
+            }
+
+            return this.bundle.formatters.get(formatterKey)(args[0], this)
+        }
+
         const msg = this.resolveMessage(key)
 
         if (typeof msg !== "string") {
