@@ -196,6 +196,18 @@ class MessageResolver {
      * @returns the formatted message or an error message
      */
     m(key, ...args) {
+        if (key.startsWith("$")) {
+            // If the message key starts with a dollar sign, it is a reference
+            // to a formatter to be applied directly to the first argument.
+            if (args.length !== 1) {
+                return this.reportError(`Formatter message must be formatted with exactly one argument, ${args} given`);
+            }
+            const formatterKey = key.substr(1);
+            if (!this.bundle.formatters.has(formatterKey)) {
+                return this.reportError(`Missing formatter: ${formatterKey}`);
+            }
+            return this.bundle.formatters.get(formatterKey)(args[0], this);
+        }
         const msg = this.resolveMessage(key);
         if (typeof msg !== "string") {
             return this.reportError(`Message for key '${key}' is a plural object; expected string`);
@@ -457,41 +469,55 @@ class JsonBundleLoader {
  * limitations under the License.
  */
 /**
- * Creates new `JsonSource` which loads messages by making a HTTP `GET` request.
+ * Creates a `JsonSource` that loads a static URL via HTTP GET using the
+ * `fetch` function.
+ * @param url the URL to fetch
+ * @param options additional fetch options
+ * @returns a JsonSource
+ */
+function fetchJson(url, options) {
+    return () => {
+        return fetchText(url, options);
+    };
+}
+/**
+ * Creates new `JsonSource` which loads messages by making a HTTP `GET` request
+ * using the `fetch` function.
  * The URL is constructed from the given `baseUrl` and the locale. For every
- * locale, the URL is `<baseUrl>/<locale>.json`. When locale is `undefined`,
- * the default messages is loaded from `<baseUrl>/default.json`.
+ * locale, the URL is `<baseUrl>/<locale>.json`.
  *
  * @param baseUrl the baseUrl
  * @param options additional options being passed to every `fetch` call
  * @returns a `JsonSource`
  */
-function fetchJsonSource(baseUrl, options) {
+function fetchJsonByLocale(baseUrl, options) {
     return (locale) => {
-        var _a, _b;
-        const url = `${baseUrl}/${(_a = locale === null || locale === void 0 ? void 0 : locale.tag) !== null && _a !== void 0 ? _a : "default"}.json`;
-        return fetch(url, {
-            body: options === null || options === void 0 ? void 0 : options.body,
-            cache: options === null || options === void 0 ? void 0 : options.cache,
-            credentials: options === null || options === void 0 ? void 0 : options.credentials,
-            headers: options === null || options === void 0 ? void 0 : options.headers,
-            integrity: options === null || options === void 0 ? void 0 : options.integrity,
-            keepalive: options === null || options === void 0 ? void 0 : options.keepalive,
-            method: (_b = options === null || options === void 0 ? void 0 : options.method) !== null && _b !== void 0 ? _b : "GET",
-            mode: options === null || options === void 0 ? void 0 : options.mode,
-            redirect: options === null || options === void 0 ? void 0 : options.redirect,
-            referrer: options === null || options === void 0 ? void 0 : options.referrer,
-            referrerPolicy: options === null || options === void 0 ? void 0 : options.referrerPolicy,
-            signal: options === null || options === void 0 ? void 0 : options.signal,
-            window: options === null || options === void 0 ? void 0 : options.window,
-        })
-            .then(response => {
-            if (response.status < 300) {
-                return response.text();
-            }
-            throw `Got unexpected status code when loading '${url}': ${response.status} (${response.statusText})`;
-        });
+        return fetchText(`${baseUrl}/${locale.tag}.json`, options);
     };
+}
+function fetchText(url, options) {
+    var _a;
+    return fetch(url, {
+        body: options === null || options === void 0 ? void 0 : options.body,
+        cache: options === null || options === void 0 ? void 0 : options.cache,
+        credentials: options === null || options === void 0 ? void 0 : options.credentials,
+        headers: options === null || options === void 0 ? void 0 : options.headers,
+        integrity: options === null || options === void 0 ? void 0 : options.integrity,
+        keepalive: options === null || options === void 0 ? void 0 : options.keepalive,
+        method: (_a = options === null || options === void 0 ? void 0 : options.method) !== null && _a !== void 0 ? _a : "GET",
+        mode: options === null || options === void 0 ? void 0 : options.mode,
+        redirect: options === null || options === void 0 ? void 0 : options.redirect,
+        referrer: options === null || options === void 0 ? void 0 : options.referrer,
+        referrerPolicy: options === null || options === void 0 ? void 0 : options.referrerPolicy,
+        signal: options === null || options === void 0 ? void 0 : options.signal,
+        window: options === null || options === void 0 ? void 0 : options.window,
+    })
+        .then(response => {
+        if (response.status < 300) {
+            return response.text();
+        }
+        throw `Got unexpected status code when loading '${url}': ${response.status} (${response.statusText})`;
+    });
 }
 
 /*
@@ -592,5 +618,5 @@ function registerStandardFormatters(messageResolver) {
     return messageResolver;
 }
 
-export { CascadingBundleLoader, JsonBundleLoader, Locale, MessageResolver, MessageResolvingError, ObjectBundleLoader, dateTimeFormatter, fetchJsonSource, numberFormatter, registerStandardFormatters, relativeDateFormatter };
+export { CascadingBundleLoader, JsonBundleLoader, Locale, MessageResolver, MessageResolvingError, ObjectBundleLoader, dateTimeFormatter, fetchJson, fetchJsonByLocale, numberFormatter, registerStandardFormatters, relativeDateFormatter };
 //# sourceMappingURL=weccoframework-i18n.es5.js.map
