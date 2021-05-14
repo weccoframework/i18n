@@ -1,6 +1,10 @@
 # i18n
 
-![CI Status][ci-img-url] [![Releases][release-img-url]][release-url]
+![CI Status][ci-img-url]
+[![Releases][release-img-url]][release-url]
+[![Vulerabilities][vulnerabilities-img-url]][vulnerabilities-img-url]
+[![Dependencies][dependencies-img-url]][dependencies-url]
+
 
 A simple localization framework for web applications.
 
@@ -346,4 +350,7 @@ limitations under the License.
 [ci-img-url]: https://github.com/weccoframework/i18n/workflows/CI/badge.svg
 [release-img-url]: https://img.shields.io/github/v/release/weccoframework/i18n.svg
 [release-url]: https://github.com/weccoframework/i18n/releases
-
+[vulnerabilities-url]: https://snyk.io/test/github/weccoframework/i18n
+[vulnerabilities-img-url]: https://snyk.io/test/github/weccoframework/i18n/badge.svg
+[dependencies-url]: https://david-dm.org/weccoframework/i18n
+[dependencies-img-url]: https://status.david-dm.org/gh/weccoframework/i18n.svg
