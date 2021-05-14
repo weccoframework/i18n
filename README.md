@@ -255,29 +255,33 @@ two. In this case the first one is used to load the default messages while the s
 used to load the localized messages. 
 
 ```javascript
-const jsonSource = (language) => {
+const jsonSource = (locale) => {
     // ...
     // return a Promise resolving to a string. 
-    // When loading the default messages, language is undefined
 }
 
 const messageResolver = await MessageResolver.create(new JsonBundleLoader(jsonSource))
 ```
 
-#### fetchJsonSource
+#### fetchJson
+
+`i18n` provides a function that creates a `JsonSource` which uses `fetch` to load
+a JSON string from an static URL ignoring the passed `Locale`.
+
+#### fetchJsonByLocale
 
 `i18n` comes with with a ready to use implementation of `JsonSource`
-which uses `fetch` to load messages identified by language. The implementation uses
+which uses `fetch` to load messages identified by locale. The implementation uses
 the following conventions to load messages:
 
 * all messages are located under a given _base URL_
-* default messages can be loaded from `<baseURL>/default.json`
-* localized messages for `<lang>` can be loaded from `<baseURL>/<lang>.json`
+* localized messages for `<locale>` can be loaded from `<baseURL>/<locale>.json`
 
 You can pass additional request init options, such as `CORS` mode, change the
 request method (which defaults to `GET`), set headers, ...
 
 ### CascadingBundleLoader
+
 The `CascadingBundleLoader` loads messages by using a set of underlying `BundleLoader`s
 and merging the messages returned by each loader together in a way similiar to how CSS
 rules are merged (thus the name). Use this loader to get an aggregated set of messages

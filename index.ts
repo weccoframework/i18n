@@ -21,5 +21,5 @@ export { Messages, PluralMessage, Bundle, Formatter, ResolvingContext } from "./
 export { BundleLoader } from "./src/loader"
 export { MessageResolver, MessageResolvingError } from "./src/messageresolver"
 export { BundleObject, ObjectBundleLoader, CascadingBundleLoader, JsonBundleLoader, JsonSource } from "./src/loaders"
-export { fetchJsonSource } from "./src/jsonsource"
+export { fetchJsonByLocale, fetchJson } from "./src/jsonsource"
 export { dateTimeFormatter, relativeDateFormatter, numberFormatter, registerStandardFormatters } from "./src/formatters"

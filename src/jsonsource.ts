@@ -20,38 +20,54 @@ import { JsonSource } from "./loaders"
 import { Locale } from "./locale"
 
 /**
- * Creates new `JsonSource` which loads messages by making a HTTP `GET` request.
+ * Creates a `JsonSource` that loads a static URL via HTTP GET using the 
+ * `fetch` function.
+ * @param url the URL to fetch
+ * @param options additional fetch options
+ * @returns a JsonSource
+ */
+export function fetchJson(url: string, options?: RequestInit): JsonSource {
+    return (): Promise<string | undefined> => {
+        return fetchText(url, options)
+    }
+}
+
+/**
+ * Creates new `JsonSource` which loads messages by making a HTTP `GET` request
+ * using the `fetch` function.
  * The URL is constructed from the given `baseUrl` and the locale. For every
- * locale, the URL is `<baseUrl>/<locale>.json`. When locale is `undefined`,
- * the default messages is loaded from `<baseUrl>/default.json`.
+ * locale, the URL is `<baseUrl>/<locale>.json`.
  * 
  * @param baseUrl the baseUrl
  * @param options additional options being passed to every `fetch` call
  * @returns a `JsonSource`
  */
-export function fetchJsonSource(baseUrl: string, options?: RequestInit): JsonSource {
+export function fetchJsonByLocale(baseUrl: string, options?: RequestInit): JsonSource {
     return (locale: Locale): Promise<string | undefined> => {
-        const url = `${baseUrl}/${locale?.tag ?? "default"}.json`
-        return fetch(url, {
-            body: options?.body,
-            cache: options?.cache,
-            credentials: options?.credentials,
-            headers: options?.headers,
-            integrity: options?.integrity,
-            keepalive: options?.keepalive,
-            method: options?.method ?? "GET",
-            mode: options?.mode,
-            redirect: options?.redirect,
-            referrer: options?.referrer,
-            referrerPolicy: options?.referrerPolicy,
-            signal: options?.signal,
-            window: options?.window,
-        })
-            .then(response => {
-                if (response.status < 300) {
-                    return response.text()
-                }
-                throw `Got unexpected status code when loading '${url}': ${response.status} (${response.statusText})`
-            })
+        return fetchText(`${baseUrl}/${locale.tag}.json`, options)
     }
+}
+
+function fetchText(url: string, options?: RequestInit): Promise<string> {
+    return fetch(url, {
+        body: options?.body,
+        cache: options?.cache,
+        credentials: options?.credentials,
+        headers: options?.headers,
+        integrity: options?.integrity,
+        keepalive: options?.keepalive,
+        method: options?.method ?? "GET",
+        mode: options?.mode,
+        redirect: options?.redirect,
+        referrer: options?.referrer,
+        referrerPolicy: options?.referrerPolicy,
+        signal: options?.signal,
+        window: options?.window,
+    })
+        .then(response => {
+            if (response.status < 300) {
+                return response.text()
+            }
+            throw `Got unexpected status code when loading '${url}': ${response.status} (${response.statusText})`
+        })
 }

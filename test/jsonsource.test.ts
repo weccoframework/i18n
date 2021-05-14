@@ -17,7 +17,8 @@
  */
 
 import { expect } from "iko"
-import { fetchJsonSource, JsonSource, Locale } from ".."
+import { fetchJsonByLocale, JsonSource, Locale } from ".."
+import { fetchJson } from "../src/jsonsource"
 
 class ResponseMock implements Response {
     headers: Headers
@@ -63,7 +64,7 @@ class ResponseMock implements Response {
     }
 }
 
-describe("fetchJsonSource", () => {
+describe("fetchJsonByLocale", () => {
     let source: JsonSource
     let url: string
     let requestInit: RequestInit
@@ -76,7 +77,7 @@ describe("fetchJsonSource", () => {
             return Promise.resolve(new ResponseMock(200, `{"foo": "bar"}`))
         }
     
-        source = fetchJsonSource("/test/path", {
+        source = fetchJsonByLocale("/test/path", {
             method: "POST",
         })
     })
@@ -85,6 +86,32 @@ describe("fetchJsonSource", () => {
         const json = await source(new Locale("de"))
         expect(json).toBe(`{"foo": "bar"}`)
         expect(url).toBe("/test/path/de.json")
+        expect(requestInit.method).toBe("POST")
+    })
+})
+
+describe("fetchJson", () => {
+    let source: JsonSource
+    let url: string
+    let requestInit: RequestInit
+
+    before(() => {
+        global.fetch = function (u: string, i: RequestInit): Promise<Response> {
+            url = u
+            requestInit = i
+
+            return Promise.resolve(new ResponseMock(200, `{"foo": "bar"}`))
+        }
+    
+        source = fetchJson("/test/path", {
+            method: "POST",
+        })
+    })
+
+    it("should load /text/path", async () => {        
+        const json = await source(new Locale("de"))
+        expect(json).toBe(`{"foo": "bar"}`)
+        expect(url).toBe("/test/path")
         expect(requestInit.method).toBe("POST")
     })
 })
