@@ -69,24 +69,48 @@ describe("fetchJsonByLocale", () => {
     let url: string
     let requestInit: RequestInit
 
-    before(() => {
-        global.fetch = function (u: string, i: RequestInit): Promise<Response> {
-            url = u
-            requestInit = i
-
-            return Promise.resolve(new ResponseMock(200, `{"foo": "bar"}`))
-        }
-    
-        source = fetchJsonByLocale("/test/path", {
-            method: "POST",
+    describe("found", () => {        
+        before(() => {
+            global.fetch = function (u: string, i: RequestInit): Promise<Response> {
+                url = u
+                requestInit = i
+                
+                return Promise.resolve(new ResponseMock(200, `{"foo": "bar"}`))
+            }
+            
+            source = fetchJsonByLocale("/test/path", {
+                method: "POST",
+            })
+        })
+        
+        it("should load de.json", async () => {        
+            const json = await source(new Locale("de"))
+            expect(json).toBe(`{"foo": "bar"}`)
+            expect(url).toBe("/test/path/de.json")
+            expect(requestInit.method).toBe("POST")
         })
     })
 
-    it("should load de.json", async () => {        
-        const json = await source(new Locale("de"))
-        expect(json).toBe(`{"foo": "bar"}`)
-        expect(url).toBe("/test/path/de.json")
-        expect(requestInit.method).toBe("POST")
+    describe("not found", () => {        
+        before(() => {
+            global.fetch = function (u: string, i: RequestInit): Promise<Response> {
+                url = u
+                requestInit = i
+                
+                return Promise.resolve(new ResponseMock(404, ""))
+            }
+            
+            source = fetchJsonByLocale("/test/path", {
+                method: "POST",
+            })
+        })
+        
+        it("should load de.json", async () => {        
+            const json = await source(new Locale("de"))
+            expect(json).toBeUndefined()
+            expect(url).toBe("/test/path/de.json")
+            expect(requestInit.method).toBe("POST")
+        })
     })
 })
 
