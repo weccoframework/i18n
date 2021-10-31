@@ -48,7 +48,7 @@ export function fetchJsonByLocale(baseUrl: string, options?: RequestInit): JsonS
     }
 }
 
-function fetchText(url: string, options?: RequestInit): Promise<string> {
+function fetchText(url: string, options?: RequestInit): Promise<string | undefined> {
     return fetch(url, {
         body: options?.body,
         cache: options?.cache,
@@ -68,6 +68,11 @@ function fetchText(url: string, options?: RequestInit): Promise<string> {
             if (response.status < 300) {
                 return response.text()
             }
+
+            if (response.status === 404) {
+                return Promise.resolve(undefined)
+            }
+            
             throw `Got unexpected status code when loading '${url}': ${response.status} (${response.statusText})`
         })
 }
