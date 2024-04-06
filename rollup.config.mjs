@@ -63,7 +63,7 @@ export default [
             commonjs(),
             terser({
                 format: {
-                    preamble: `/* @weccoframework/i18n v${version}; Copyright 2019 - 2023 the wecco authors. Published under the terms of the Apache License V2. */`,
+                    preamble: `/* @weccoframework/i18n v${version}; Copyright 2021 - 2024 Alexander Metzner. Published under the terms of the Apache License V2. */`,
                 },
             }),
 
