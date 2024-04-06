@@ -194,5 +194,19 @@ describe("JsonBundleLoader", () => {
                 .toHave("n")
             })
         })
+
+        describe("with skipErrors", () => {
+            let loaded: Bundle | undefined
+            
+            before(async () => {                
+                const source: JsonSource = (_: Locale) => Promise.resolve('json error')
+                const loader = new JsonBundleLoader(source, true)
+                loaded = await loader.load(new Locale("en-US"))
+            })
+            
+            it("should return empty bundle", () => {
+                expect(loaded).toBeUndefined()
+            })            
+        })
     })
 })
