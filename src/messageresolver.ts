@@ -47,7 +47,7 @@ export class MessageResolver implements ResolvingContext {
      * Locale for determining localized versions of the messages.
      * @param loader the message loader
      * @param Locale optional Locale to use. Defaults to the browser's Locale
-     * @returns a Promise resolving to a `BundleLoader` instance
+     * @returns a Promise resolving to a `MessageResolver` instance
      */
     static async create(loader: BundleLoader, locale?: Locale): Promise<MessageResolver> {
         const localeToUse = locale ?? determineNavigatorLocale()

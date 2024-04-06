@@ -147,7 +147,7 @@ export class JsonBundleLoaderError extends Error {
  * i.e. `"1"` with their numeric keys.
  */
 export class JsonBundleLoader implements BundleLoader {
-    constructor(private readonly source: JsonSource) { }
+    constructor(private readonly source: JsonSource, private readonly ignoreErrors: boolean = false) { }
 
     load(locale: Locale): Promise<Bundle | undefined> {
         return this.source(locale)
@@ -167,26 +167,36 @@ export class JsonBundleLoader implements BundleLoader {
             formatters: new Map<string, Formatter>(),
         }
 
-        const parsed = JSON.parse(jsonString) as JsonMessages
-        Object.keys(parsed).forEach(messageKey => {
-            const msg = parsed[messageKey] 
-            if (typeof msg === "string") {
-                bundle.messages.set(messageKey, msg)
-            } else {
-                const pluralMessage = new Map<PluralKey, string>()
-                Object.keys(parsed[messageKey]).forEach((pluralKey: string) => {
-                    if (pluralKey.match(/^[0-9]+$/)) {
-                        pluralMessage.set(parseInt(pluralKey), msg[pluralKey])
-                    } else if (pluralKey === "n") {
-                        pluralMessage.set("n", msg[pluralKey])                    
-                    } else {
-                        throw new JsonBundleLoaderError(`invalid plural key '${pluralKey}' for message key '${messageKey}'`)
-                    }
-                })
-                bundle.messages.set(messageKey, pluralMessage)
-            }
-        })
+        try {
 
-        return bundle
+            const parsed = JSON.parse(jsonString) as JsonMessages
+            Object.keys(parsed).forEach(messageKey => {
+                const msg = parsed[messageKey] 
+                if (typeof msg === "string") {
+                    bundle.messages.set(messageKey, msg)
+                } else {
+                    const pluralMessage = new Map<PluralKey, string>()
+                    Object.keys(parsed[messageKey]).forEach((pluralKey: string) => {
+                        if (pluralKey.match(/^[0-9]+$/)) {
+                            pluralMessage.set(parseInt(pluralKey), msg[pluralKey])
+                        } else if (pluralKey === "n") {
+                            pluralMessage.set("n", msg[pluralKey])                    
+                        } else {
+                            throw new JsonBundleLoaderError(`invalid plural key '${pluralKey}' for message key '${messageKey}'`)
+                        }
+                    })
+                    bundle.messages.set(messageKey, pluralMessage)
+                }
+            })
+            
+            return bundle
+        } catch (e) {
+            if (this.ignoreErrors) {
+                console.warn(`Error loading JSON message bundle: ${e}. Ignoring error`)
+                return undefined
+            }
+
+            throw e
+        }
     }
 }
